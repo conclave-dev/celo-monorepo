@@ -19,4 +19,5 @@ interface IElection {
     address[] calldata,
     uint256[] calldata
   ) external returns (uint256);
+  function getActiveVotesForGroup(address group) external view returns (uint256);
 }
