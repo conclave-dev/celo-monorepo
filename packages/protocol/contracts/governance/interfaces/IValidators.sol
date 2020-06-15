@@ -22,4 +22,18 @@ interface IValidators {
   function forceDeaffiliateIfValidator(address validator) external;
   function getValidatorGroupSlashingMultiplier(address) external view returns (uint256);
   function affiliate(address group) external returns (bool);
+  function getValidatorGroup(address account)
+    external
+    view
+    returns (address[] memory, uint256, uint256, uint256, uint256[] memory, uint256, uint256);
+  function getValidator(address account)
+    external
+    view
+    returns (
+      bytes memory ecdsaPublicKey,
+      bytes memory blsPublicKey,
+      address affiliation,
+      uint256 score,
+      address signer
+    );
 }
