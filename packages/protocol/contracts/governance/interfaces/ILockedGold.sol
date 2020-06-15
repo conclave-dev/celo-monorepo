@@ -24,4 +24,5 @@ interface ILockedGold {
     uint256[] calldata indices
   ) external;
   function isSlasher(address) external view returns (bool);
+  function getAccountNonvotingLockedGold(address account) external view returns (uint256);
 }
