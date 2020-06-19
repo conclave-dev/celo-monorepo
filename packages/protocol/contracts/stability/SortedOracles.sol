@@ -9,7 +9,7 @@ import "../common/linkedlists/AddressSortedLinkedListWithMedian.sol";
 import "../common/linkedlists/SortedLinkedListWithMedian.sol";
 
 /**
- * @title Maintains a sorted list of oracle exchange rates between Celo Gold and other currencies.
+ * @title Maintains a sorted list of oracle exchange rates between Celo and other currencies.
  */
 contract SortedOracles is ISortedOracles, Ownable, Initializable {
   using SafeMath for uint256;
@@ -104,7 +104,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Removes a report that is expired.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @param n The number of expired reports to remove, at most (deterministic upper gas bound).
    */
   function removeExpiredReports(address token, uint256 n) external {
@@ -124,7 +124,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Check if last report is expired.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return bool isExpired and the address of the last report
    */
   function isOldestReportExpired(address token) public view returns (bool, address) {
@@ -140,8 +140,8 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Updates an oracle value and the median.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
-   * @param value The amount of `token` equal to one Celo Gold, expressed as a fixidity value.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
+   * @param value The amount of `token` equal to one Celo, expressed as a fixidity value.
    * @param lesserKey The element which should be just left of the new oracle value.
    * @param greaterKey The element which should be just right of the new oracle value.
    * @dev Note that only one of `lesserKey` or `greaterKey` needs to be correct to reduce friction.
@@ -184,7 +184,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Returns the number of rates.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return The number of reported oracle rates for `token`.
    */
   function numRates(address token) public view returns (uint256) {
@@ -193,7 +193,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Returns the median rate.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return The median exchange rate for `token`.
    */
   function medianRate(address token) external view returns (uint256, uint256) {
@@ -202,7 +202,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Gets all elements from the doubly linked list.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return An unpacked list of elements from largest to smallest.
    */
   function getRates(address token)
@@ -215,7 +215,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Returns the number of timestamps.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return The number of oracle report timestamps for `token`.
    */
   function numTimestamps(address token) public view returns (uint256) {
@@ -224,7 +224,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Returns the median timestamp.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return The median report timestamp for `token`.
    */
   function medianTimestamp(address token) external view returns (uint256) {
@@ -233,7 +233,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Gets all elements from the doubly linked list.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @return An unpacked list of elements from largest to smallest.
    */
   function getTimestamps(address token)
@@ -246,7 +246,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Returns whether a report exists on token from oracle.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @param oracle The oracle whose report should be checked.
    */
   function reportExists(address token, address oracle) internal view returns (bool) {
@@ -264,7 +264,7 @@ contract SortedOracles is ISortedOracles, Ownable, Initializable {
 
   /**
    * @notice Removes an oracle value and updates the median.
-   * @param token The address of the token for which the Celo Gold exchange rate is being reported.
+   * @param token The address of the token for which the Celo exchange rate is being reported.
    * @param oracle The oracle whose value should be removed.
    * @dev This can be used to delete elements for oracles that have been removed.
    * However, a > 1 elements reports list should always be maintained
