@@ -611,15 +611,15 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
    * @notice Verifies whether a contract was created by an account.
    * @param contractAddr The contract created by account.
    * @param account The account that created contract.
-   * @param creationTxNonce The nonce of the tx in which the contract was created.
+   * @param nonce The account nonce for the tx in which the contract was created.
    * @return Returns a boolean based on whether creatorship could be verified.
    */
-  function verifyContractCreator(address contractAddr, address account, uint256 creationTxNonce)
+  function verifyContractCreator(address contractAddr, address account, uint256 nonce)
     public
     returns (bool)
   {
     uint256 unpaddedByteLength = computeUnpaddedByteLength(
-      abi.encodePacked(rlpEncodeAddress(account), RLPEncodeNonce(creationTxNonce))
+      abi.encodePacked(rlpEncodeAddress(account), RLPEncodeNonce(nonce))
     );
 
     // Compares the input contract address with the one generated from the account and creation tx nonce
@@ -632,12 +632,24 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
               abi.encodePacked(
                 bytes1(uint8(0xc0 + unpaddedByteLength)),
                 RLPEncodeAddress(account),
-                RLPEncodeNonce(creationTxNonce)
+                RLPEncodeNonce(nonce)
               )
             )
           )
         )
       );
+  }
+
+  /**
+   * @notice Validates an account and the signer address it is authorizing.
+   * @param authorized The address to authorize.
+   */
+  function validateAuthorizeAddresses(address authorized) private {
+    require(isAccount(msg.sender), "Unknown account");
+    require(
+      isNotAccount(authorized) && isNotAuthorizedSigner(authorized),
+      "Cannot re-authorize address or locked gold account."
+    );
   }
 
   /**
@@ -651,14 +663,28 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
    * @dev v, r, s constitute `current`'s signature on `msg.sender`.
    */
   function authorize(address authorized, uint8 v, bytes32 r, bytes32 s) private {
-    require(isAccount(msg.sender), "Unknown account");
-    require(
-      isNotAccount(authorized) && isNotAuthorizedSigner(authorized),
-      "Cannot re-authorize address or locked gold account."
-    );
+    validateAuthorizeAddresses(authorized);
 
     address signer = Signatures.getSignerOfAddress(msg.sender, v, r, s);
     require(signer == authorized, "Invalid signature");
+
+    authorizedBy[authorized] = msg.sender;
+  }
+
+  /**
+   * @notice Authorizes some role of `msg.sender`'s account to another address.
+   * @param authorized The address to authorize.
+   * @param v The recovery id of the incoming ECDSA signature.
+   * @param r Output value r of the ECDSA signature.
+   * @param s Output value s of the ECDSA signature.
+   * @dev Fails if the address is already authorized or is an account.
+   * @dev Note that once an address is authorized, it may never be authorized again.
+   * @dev v, r, s constitute `current`'s signature on `msg.sender`.
+   */
+  function authorizeContract(address authorized, uint256 nonce) private {
+    validateAuthorizeAddresses(authorized);
+
+    require(verifyContractCreator(authorized, msg.sender, nonce), "Sender did not create contract");
 
     authorizedBy[authorized] = msg.sender;
   }
