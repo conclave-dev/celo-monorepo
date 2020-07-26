@@ -548,6 +548,12 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
     return (authorizedBy[signer] == address(0));
   }
 
+  function rlpEncodeAddress(address a) public returns (bytes memory) {
+    // The RLP encoded address is derived from concatening: 1) RLP encoding prefix, and 2) address itself
+    // The RLP encoding prefix is the sum of 0x80 and 0x14 (i.e. 20 - the address byte length)
+    return abi.encodePacked(bytes1(0x94), a);
+  }
+
   /**
    * @notice Authorizes some role of `msg.sender`'s account to another address.
    * @param authorized The address to authorize.
