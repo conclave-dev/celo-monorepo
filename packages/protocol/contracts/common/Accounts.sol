@@ -548,10 +548,63 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
     return (authorizedBy[signer] == address(0));
   }
 
-  function rlpEncodeAddress(address a) public returns (bytes memory) {
+  /**
+   * @notice Computes the unpadded byte length for a byte array
+   * @param paddedBytes The padded byte array.
+   * @return Returns the unpadded byte length.
+   */
+  function computeUnpaddedByteLength(bytes memory paddedBytes) internal returns (uint256) {
+    for (uint256 i = 0; i < paddedBytes.length; i += 1) {
+      if (paddedBytes[i] != 0x00) {
+        return paddedBytes.length - i;
+      }
+    }
+  }
+
+  /**
+   * @notice Encodes an address according to RLP spec.
+   * @param a The address to encode.
+   * @return Returns the RLP encoded address.
+   */
+  function rlpEncodeAddress(address addr) public returns (bytes memory) {
     // The RLP encoded address is derived from concatening: 1) RLP encoding prefix, and 2) address itself
     // The RLP encoding prefix is the sum of 0x80 and 0x14 (i.e. 20 - the address byte length)
-    return abi.encodePacked(bytes1(0x94), a);
+    return abi.encodePacked(bytes1(0x94), addr);
+  }
+
+  /**
+   * @notice Encodes a 256-bit unsigned integer according to RLP spec.
+   * @param num The 256-bit unsigned integer to encode.
+   * @return Returns the RLP encoded integer.
+   */
+  function rlpEncodeUint256(uint256 num) public returns (bytes memory) {
+    // Create a fixed-sized, unpadded byte array from an input number of varying size
+    bytes memory paddedNumBytes = abi.encodePacked(num);
+    uint256 unpaddedByteLength = computeUnpaddedByteLength(paddedNumBytes);
+    bytes memory numBytes = new bytes(unpaddedByteLength);
+
+    // Copy num byte elements - without the padding - to its own byte array
+    for (
+      uint256 i = paddedNumBytes.length - unpaddedByteLength;
+      i < paddedNumBytes.length;
+      i += 1
+    ) {
+      uint256 numBytesIndex = i == (paddedNumBytes.length - unpaddedByteLength)
+        ? 0
+        : numBytes.length - 1;
+      numBytes[numBytesIndex] = paddedNumBytes[i];
+    }
+
+    // Per the RLP documentation:
+    // "For a single byte whose value is in the [0x00, 0x7f] range, that byte is its own RLP encoding."
+    if (num <= 0x7f) {
+      return numBytes;
+    }
+
+    // Per the RLP documentation:
+    // "RLP encoding consists of a single byte with value 0x80 plus the length of the string followed
+    // ...by the string"
+    return abi.encodePacked(bytes1(uint8(0x80 + unpaddedByteLength)), numBytes);
   }
 
   /**
