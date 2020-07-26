@@ -608,6 +608,39 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
   }
 
   /**
+   * @notice Verifies whether a contract was created by an account.
+   * @param contractAddr The contract created by account.
+   * @param account The account that created contract.
+   * @param creationTxNonce The nonce of the tx in which the contract was created.
+   * @return Returns a boolean based on whether creatorship could be verified.
+   */
+  function verifyContractCreator(address contractAddr, address account, uint256 creationTxNonce)
+    public
+    returns (bool)
+  {
+    uint256 unpaddedByteLength = computeUnpaddedByteLength(
+      abi.encodePacked(rlpEncodeAddress(account), RLPEncodeNonce(creationTxNonce))
+    );
+
+    // Compares the input contract address with the one generated from the account and creation tx nonce
+    return
+      contractAddr ==
+      address(
+        uint160(
+          uint256(
+            keccak256(
+              abi.encodePacked(
+                bytes1(uint8(0xc0 + unpaddedByteLength)),
+                RLPEncodeAddress(account),
+                RLPEncodeNonce(creationTxNonce)
+              )
+            )
+          )
+        )
+      );
+  }
+
+  /**
    * @notice Authorizes some role of `msg.sender`'s account to another address.
    * @param authorized The address to authorize.
    * @param v The recovery id of the incoming ECDSA signature.
