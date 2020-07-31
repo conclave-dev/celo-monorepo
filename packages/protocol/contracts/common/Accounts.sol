@@ -13,6 +13,17 @@ import "../common/libraries/ReentrancyGuard.sol";
 contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRegistry {
   using SafeMath for uint256;
 
+  enum SignerRole { VOTE, VALIDATOR, ATTESTATION }
+
+  struct Signer {
+    // Determines the types of transactions that a key has signing authority over
+    SignerRole role;
+    // The account that the signer is authorized to sign transactions for
+    address account;
+    // Whether the signer is currently able to sign txs on behalf of an account
+    bool active;
+  }
+
   struct Signers {
     // The address that is authorized to vote in governance and validator elections on behalf of the
     // account. The account can vote as well, whether or not a vote signing key has been specified.
@@ -47,6 +58,8 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
   mapping(address => Account) private accounts;
   // Maps authorized signers to the account that provided the authorization.
   mapping(address => address) public authorizedBy;
+  // Maps signer addresses to its details
+  mapping(address => Signer) public signers;
 
   event AttestationSignerAuthorized(address indexed account, address signer);
   event VoteSignerAuthorized(address indexed account, address signer);
