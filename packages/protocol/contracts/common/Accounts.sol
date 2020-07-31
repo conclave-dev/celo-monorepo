@@ -20,8 +20,8 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
     SignerRole role;
     // The account that the signer is authorized to sign transactions for
     address account;
-    // Whether the signer is currently able to sign txs on behalf of an account
-    bool active;
+    // Whether the signer is authorized and able to sign txs on behalf of an account
+    bool authorized;
   }
 
   struct Signers {
@@ -58,7 +58,8 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
   mapping(address => Account) private accounts;
   // Maps authorized signers to the account that provided the authorization.
   mapping(address => address) public authorizedBy;
-  // Maps signer addresses to its details
+  // Maps signer addresses to details
+  // Note: `signers` will eventually replace `authorizedBy`
   mapping(address => Signer) public signers;
 
   event AttestationSignerAuthorized(address indexed account, address signer);
@@ -582,5 +583,30 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
     require(signer == authorized, "Invalid signature");
 
     authorizedBy[authorized] = msg.sender;
+  }
+
+  /**
+   * @notice Validates an account and the signer it is authorizing
+   * @param account The account authorizing the signer.
+   * @param signer The signer being authorized by the account.
+   * @dev Fails if account is not registered.
+   * @dev Fails if signer is registered or has already been fully authorized.
+   */
+  function validateAuthorization(address account, address signer) private {
+    require(isAccount(account), "Account must be registered");
+    require(isNotAccount(signer), "Signer cannot be registered");
+    require(signers[signer].authorized == false, "Signer is already authorized");
+  }
+
+  /**
+   * @notice Called by a registered account to initiate a signer authorization
+   * @param signer The address that is being authorized as a signer.
+   * @param role The signer role.
+   */
+  function initiateAuthorization(address signer, SignerRole role) external {
+    validateAuthorization(msg.sender, signer);
+
+    // Map signer address to struct, with the `authorized` field set to false
+    signers[signer] = Signer(role, msg.sender, false);
   }
 }
