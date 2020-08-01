@@ -600,7 +600,7 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
    * @param signer The address being authorized.
    * @return Returns `true` if exists, and `false` otherwise.
    */
-  function hasSignerAuthorization(address account, address signer) private view returns (bool) {
+  function hasSignerAuthorization(address account, address signer) internal view returns (bool) {
     return account == signerAuthorizations[signer].account;
   }
 
@@ -611,7 +611,7 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
    * @dev Fails if account is not registered.
    * @dev Fails if signer is registered or has already been fully authorized.
    */
-  function validateSignerAuthorization(address account, address signer) private view {
+  function validateSignerAuthorization(address account, address signer) internal view {
     require(isAccount(account), "Account must be registered");
     require(isNotAccount(signer), "Signer cannot be registered");
     require(isNotAuthorizedSignerAlt(signer), "Signer is already authorized");
@@ -628,5 +628,42 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
 
     // Map signer address to struct, with the `authorized` field set to false
     signerAuthorizations[signer] = SignerAuthorization(role, msg.sender, false);
+  }
+
+  /**
+   * @notice Called by a signer to complete a signer authorization
+   * @notice Will be updated in the final implementation phase
+   * @param account The authorizing account, for confirmation purposes.
+   */
+  function completeSignerAuthorization(address account) external {
+    validateSignerAuthorization(account, msg.sender);
+    require(hasSignerAuthorization(account, msg.sender), "Authorization does not exist");
+
+    SignerAuthorization storage authorization = signerAuthorizations[msg.sender];
+
+    // Manipulate existing implementation's signer stores for backwards compatibility
+    // NOTE: Will be removed once contracts are all updated to the new implementation
+
+    // Update the authorizing account's signers by setting signer to the auth'd role
+    Signers storage accountSigners = accounts[authorization.account].signers;
+
+    // Compare equality between authorization role and enum values, since struct fields
+    // must be accessed explicitly with dot notation. Avoiding `switch` (inline assembly)
+    // for simplicity's sake
+    if (authorization.role == SignerRole.VOTE) {
+      accountSigners.vote = msg.sender;
+    }
+    if (authorization.role == SignerRole.VALIDATOR) {
+      accountSigners.validator = msg.sender;
+    }
+    if (authorization.role == SignerRole.ATTESTATION) {
+      accountSigners.attestation = msg.sender;
+    }
+
+    // Map signer address to the authorizing account
+    authorizedBy[msg.sender] = authorization.account;
+
+    // Mark signer authorization to prevent future attempts
+    authorization.authorized = true;
   }
 }
