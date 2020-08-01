@@ -15,7 +15,7 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
 
   enum SignerRole { VOTE, VALIDATOR, ATTESTATION }
 
-  struct Signer {
+  struct SignerAuthorization {
     // Determines the types of transactions that a key has signing authority over
     SignerRole role;
     // The account that the signer is authorized to sign transactions for
@@ -60,7 +60,7 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
   mapping(address => address) public authorizedBy;
   // Maps signer addresses to details
   // Note: `signers` will eventually replace `authorizedBy`
-  mapping(address => Signer) public signers;
+  mapping(address => SignerAuthorization) public signerAuthorizations;
 
   event AttestationSignerAuthorized(address indexed account, address signer);
   event VoteSignerAuthorized(address indexed account, address signer);
@@ -586,16 +586,35 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
   }
 
   /**
-   * @notice Validates an account and the signer it is authorizing
-   * @param account The account authorizing the signer.
-   * @param signer The signer being authorized by the account.
+   * @notice Check if an address was authorized via a signer authorization.
+   * @param signer The possibly authorized address.
+   * @return Returns `false` if authorized. Returns `true` otherwise.
+   */
+  function isNotAuthorizedSignerAlt(address signer) internal view returns (bool) {
+    return (signerAuthorizations[signer].authorized == false);
+  }
+
+  /**
+   * @notice Checks if an authorization exists for an account and signer pair.
+   * @param account The authorizing account.
+   * @param signer The address being authorized.
+   * @return Returns `true` if exists, and `false` otherwise.
+   */
+  function hasSignerAuthorization(address account, address signer) private view returns (bool) {
+    return account == signerAuthorizations[signer].account;
+  }
+
+  /**
+   * @notice Validates the state of an account and the signer it is authorizing
+   * @param account The authorizing account.
+   * @param signer The address being authorized.
    * @dev Fails if account is not registered.
    * @dev Fails if signer is registered or has already been fully authorized.
    */
-  function validateAuthorization(address account, address signer) private {
+  function validateSignerAuthorization(address account, address signer) private view {
     require(isAccount(account), "Account must be registered");
     require(isNotAccount(signer), "Signer cannot be registered");
-    require(signers[signer].authorized == false, "Signer is already authorized");
+    require(isNotAuthorizedSignerAlt(signer), "Signer is already authorized");
   }
 
   /**
@@ -603,10 +622,11 @@ contract Accounts is IAccounts, Ownable, ReentrancyGuard, Initializable, UsingRe
    * @param signer The address that is being authorized as a signer.
    * @param role The signer role.
    */
-  function initiateAuthorization(address signer, SignerRole role) external {
-    validateAuthorization(msg.sender, signer);
+  function initiateSignerAuthorization(address signer, SignerRole role) external {
+    validateSignerAuthorization(msg.sender, signer);
+    require(hasSignerAuthorization(msg.sender, signer) == false, "Authorization already exists");
 
     // Map signer address to struct, with the `authorized` field set to false
-    signers[signer] = Signer(role, msg.sender, false);
+    signerAuthorizations[signer] = SignerAuthorization(role, msg.sender, false);
   }
 }
